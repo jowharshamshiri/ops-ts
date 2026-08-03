@@ -1,14 +1,38 @@
 {
-  "name": "opsx-ts",
-  "version": "1.0.0",
+  "name": "ops-ts",
+  "version": "1.1.25",
   "description": "TypeScript ops framework with composable wrappers and batch execution",
+  "author": {
+    "name": "Bahram Joharshamshiri",
+    "email": "jowharshamshiri@gmail.com",
+    "url": "https://github.com/jowharshamshiri"
+  },
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jowharshamshiri/ops-ts.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jowharshamshiri/ops-ts/issues"
+  },
+  "homepage": "https://github.com/jowharshamshiri/ops-ts#readme",
+  "keywords": [
+    "ops",
+    "operations",
+    "workflow",
+    "batch",
+    "rollback",
+    "json-schema",
+    "typescript"
+  ],
   "type": "module",
   "exports": {
     ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" }
   },
   "files": ["dist", "src"],
+  "publishConfig": { "access": "public" },
   "scripts": {
+    "prepack": "npm run build",
     "build": "tsc -p tsconfig.json",
     "test": "tsx --test tests/**/*.test.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
