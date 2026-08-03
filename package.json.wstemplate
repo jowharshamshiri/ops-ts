@@ -1,5 +1,5 @@
 {
-  "name": "ops-ts",
+  "name": "@jowharshamshiri/ops-ts",
   "version": "{{ project.version }}",
   "description": "TypeScript ops framework with composable wrappers and batch execution",
   "author": {
