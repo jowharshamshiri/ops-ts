@@ -5,7 +5,7 @@ export class DryContext {
   private readonly valuesMap = new Map<string, unknown>();
   private flags: ControlFlags = { aborted: false };
   withValue(key: string, value: unknown): this { this.insert(key, value); return this; }
-  insert(key: string, value: unknown): void { assertJsonValue(value, key); this.valuesMap.set(key, structuredClone(value)); }
+  insert(key: string, value: unknown): void { this.valuesMap.set(key, encodeJsonValue(value,key)); }
   get<T>(key: string): T | undefined { const value=this.valuesMap.get(key); return value === undefined ? undefined : structuredClone(value) as T; }
   getRequired<T>(key: string): T { if (!this.valuesMap.has(key)) throw new ContextError(`Required dry context key '${key}' not found`); return structuredClone(this.valuesMap.get(key)) as T; }
   contains(key: string): boolean { return this.valuesMap.has(key); }
@@ -46,4 +46,15 @@ export class WetContext {
   async ensure<T>(key: string, dry: DryContext, factory: (dry: DryContext, wet: WetContext, key: string) => Promise<T>): Promise<T> { if(this.refs.has(key)) return this.getRequired<T>(key); const value=await factory(dry,this,key); this.refs.set(key,value); return value; }
   merge(other: WetContext): void { for(const key of other.keys()) this.refs.set(key,other.getRef(key)); }
 }
-function assertJsonValue(value: unknown, key: string): void { try { JSON.stringify(value); } catch { throw new ContextError(`Value for dry context key '${key}' is not JSON-serializable`); } if(value === undefined || typeof value === "function" || typeof value === "symbol") throw new ContextError(`Value for dry context key '${key}' is not JSON-serializable`); }
+function encodeJsonValue(value: unknown, key: string): unknown {
+  let encoded: string;
+  try {
+    encoded=JSON.stringify(value, (_property,candidate: unknown)=>{
+      if(candidate === undefined || typeof candidate === "function" || typeof candidate === "symbol") throw new Error("non-JSON value");
+      if(typeof candidate === "number" && !Number.isFinite(candidate)) throw new Error("non-finite number");
+      return candidate;
+    });
+  } catch(error) { throw new ContextError(`Value for dry context key '${key}' is not JSON-serializable: ${error instanceof Error ? error.message : String(error)}`); }
+  if(encoded === undefined) throw new ContextError(`Value for dry context key '${key}' is not JSON-serializable`);
+  return JSON.parse(encoded);
+}
