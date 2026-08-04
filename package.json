@@ -1,6 +1,6 @@
 {
   "name": "@jowharshamshiri/ops-ts",
-  "version": "1.4.49",
+  "version": "1.5.51",
   "description": "TypeScript ops framework with composable wrappers and batch execution",
   "author": {
     "name": "Bahram Joharshamshiri",
