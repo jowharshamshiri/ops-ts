@@ -1,11 +1,13 @@
 export enum AttributionClass {
-  Input = "input", Resource = "resource", Environment = "environment", Internal = "internal"
+  Input = "input", Resource = "resource", Environment = "environment", Internal = "internal",
+  /** The user decided it (a cancel). Not a failure; never retried automatically. */
+  User = "user"
 }
 export namespace AttributionClass {
   export function fromWire(token: string): AttributionClass | undefined {
-    return ([AttributionClass.Input, AttributionClass.Resource, AttributionClass.Environment, AttributionClass.Internal] as string[]).includes(token) ? token as AttributionClass : undefined;
+    return ([AttributionClass.Input, AttributionClass.Resource, AttributionClass.Environment, AttributionClass.Internal, AttributionClass.User] as string[]).includes(token) ? token as AttributionClass : undefined;
   }
-  export function isPermanent(value: AttributionClass): boolean { return value === AttributionClass.Input; }
+  export function isPermanent(value: AttributionClass): boolean { return value === AttributionClass.Input || value === AttributionClass.User; }
 }
 
 export class OpError extends Error {

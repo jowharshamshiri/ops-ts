@@ -101,7 +101,7 @@ test("structured outline flattening records hierarchical paths and depth",()=>{
 });
 
 test("error wrapping keeps unclassified errors internal and class identity structural",()=>{
-  assert.equal(AttributionClass.fromWire("unknown"),undefined); assert.equal(AttributionClass.isPermanent(AttributionClass.Input),true); assert.equal(AttributionClass.isPermanent(AttributionClass.Internal),false);
+  assert.equal(AttributionClass.fromWire("unknown"),undefined); assert.equal(AttributionClass.isPermanent(AttributionClass.Input),true); assert.equal(AttributionClass.isPermanent(AttributionClass.Internal),false); assert.equal(AttributionClass.fromWire("user"),AttributionClass.User); assert.equal(AttributionClass.isPermanent(AttributionClass.User),true);
   assert.equal(new OtherError(new Error("x")).attributionClass(),AttributionClass.Internal); assert.equal(new ExecutionFailedError("x").message,"Op execution failed: x"); assert.equal(new BatchFailedError("x").message,"Batch op failed: x");
 });
 
