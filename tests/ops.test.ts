@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { AbortedError, AttributionClass, BaseTrigger, BatchFailedError, BatchMetadataBuilder, ClassifiedError, ContextError, DryContext, ExecutionFailedError, InlinePredicateOp, ListingOutline, LoopOp, Op, OpMetadata, OtherError, TimeBoundWrapper, TrivialPredicate, TriggerEngine, TriggerError, TriggerRegistry, ValidatingWrapper, WetContext, WrappedClassifiedError, BatchOp, OutlineEntry, abort, breakLoop, continueLoop, dryResult, wetPutRef } from "../src/index.js";
+import { AbortedError, AttributionClass, BaseTrigger, BatchFailedError, BatchMetadataBuilder, ClassifiedError, ContextError, DryContext, ExecutionFailedError, InlinePredicateOp, ListingOutline, LoopOp, Op, OpMetadata, OtherError, TimeBoundWrapper, TrivialPredicate, TriggerEngine, TriggerError, TriggerRegistry, ValidatingWrapper, WetContext, WrappedClassifiedError, BatchOp, OutlineEntry, abort, breakLoop, continueLoop, dryResult, wetPutRef, wrapNestedOpException } from "../src/index.js";
 
 class ValueOp implements Op<number> {
   constructor(private readonly value:number, private readonly name="ValueOp", private readonly fail?:Error, private readonly state?:string[]) {}
@@ -103,6 +103,28 @@ test("structured outline flattening records hierarchical paths and depth",()=>{
 test("error wrapping keeps unclassified errors internal and class identity structural",()=>{
   assert.equal(AttributionClass.fromWire("unknown"),undefined); assert.equal(AttributionClass.isPermanent(AttributionClass.Input),true); assert.equal(AttributionClass.isPermanent(AttributionClass.Internal),false); assert.equal(AttributionClass.fromWire("user"),AttributionClass.User); assert.equal(AttributionClass.isPermanent(AttributionClass.User),true);
   assert.equal(new OtherError(new Error("x")).attributionClass(),AttributionClass.Internal); assert.equal(new ExecutionFailedError("x").message,"Op execution failed: x"); assert.equal(new BatchFailedError("x").message,"Batch op failed: x");
+});
+
+// TEST1904: the emit source's hint — its next step for the user — is carried verbatim through wrapping and re-wrapping, and a failure that declared none stays without one: wrapping never supplies a hint. (mirrors Rust ops/src/ops.rs TEST1904)
+test("TEST1904: wrapping carries the origin's hint verbatim and never supplies one",()=>{
+  const refusal=new ClassifiedError("NO_HANDLER",AttributionClass.Environment,"cartridge ggufcartridge is not installed",undefined,"capdag cartridge install ggufcartridge");
+  const wrapped=wrapNestedOpException("PeerCallOp",refusal); assert.equal(wrapped.failureHint(),"capdag cartridge install ggufcartridge");
+  const rewrapped=wrapNestedOpException("SummarizeOp",wrapped); assert.match(rewrapped.message,/SummarizeOp/); assert.equal(rewrapped.failureHint(),"capdag cartridge install ggufcartridge");
+  const unhinted=new ClassifiedError("NO_HANDLER",AttributionClass.Environment,"no handler for the cap");
+  assert.equal(wrapNestedOpException("SummarizeOp",wrapNestedOpException("PeerCallOp",unhinted)).failureHint(),undefined);
+  assert.equal(new ExecutionFailedError("boom").failureHint(),undefined);
+});
+
+// TEST1905: a batch whose child fails with a classified refusal carries the child's hint through its own wrap, and through an outer batch; a child that declared none gives the batch no hint. (mirrors Rust ops/src/batch.rs TEST1905)
+test("TEST1905: a batch carries its failing child's hint through nested batches",async()=>{
+  const refusing=(hint?:string):Op<number>=>({perform:async()=>{throw new ClassifiedError("NO_HANDLER",AttributionClass.Environment,"cartridge ggufcartridge is not installed",undefined,hint);},metadata:()=>OpMetadata.builder("RefusingOp").build()});
+  const outer=new BatchOp<number[]>([new BatchOp<number>([refusing("capdag cartridge install ggufcartridge")])]);
+  await assert.rejects(()=>outer.perform(new DryContext(),new WetContext()),(error:unknown)=>{
+    assert.ok(error instanceof WrappedClassifiedError); assert.equal(error.failureCode(),"NO_HANDLER"); assert.equal(error.failureHint(),"capdag cartridge install ggufcartridge"); return true;
+  });
+  await assert.rejects(()=>new BatchOp<number>([refusing()]).perform(new DryContext(),new WetContext()),(error:unknown)=>{
+    assert.ok(error instanceof WrappedClassifiedError); assert.equal(error.failureCode(),"NO_HANDLER"); assert.equal(error.failureHint(),undefined); return true;
+  });
 });
 
 test("trigger registry and engine execute primary actions and expose duplicate registration",async()=>{

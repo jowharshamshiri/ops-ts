@@ -15,6 +15,8 @@ export class OpError extends Error {
   attributionClass(): AttributionClass { return AttributionClass.Internal; }
   failureCode(): string | undefined { return undefined; }
   failureArgUrn(): string | undefined { return undefined; }
+  /** The next step the emit source declared for the user, through any wrapping; undefined when it declared none, never guessed. */
+  failureHint(): string | undefined { return undefined; }
   failureReason(): string { return this.message; }
 }
 export class ExecutionFailedError extends OpError { constructor(readonly detail: string) { super(`Op execution failed: ${detail}`); } }
@@ -24,17 +26,19 @@ export class BatchFailedError extends OpError { constructor(readonly detail: str
 export class AbortedError extends OpError { constructor(readonly reason: string) { super(`Op aborted: ${reason}`); } }
 export class TriggerError extends OpError { constructor(readonly detail: string) { super(`Trigger error: ${detail}`); } }
 export class ClassifiedError extends OpError {
-  constructor(readonly code: string, readonly klass: AttributionClass, readonly detail: string, readonly argUrn?: string) { super(`${code}: ${detail}`); }
+  constructor(readonly code: string, readonly klass: AttributionClass, readonly detail: string, readonly argUrn?: string, readonly hint?: string) { super(`${code}: ${detail}`); }
   override attributionClass(): AttributionClass { return this.klass; }
   override failureCode(): string { return this.code; }
   override failureArgUrn(): string | undefined { return this.argUrn; }
+  override failureHint(): string | undefined { return this.hint; }
   override failureReason(): string { return this.detail; }
 }
 export class WrappedClassifiedError extends OpError {
-  constructor(readonly chain: string, readonly code: string, readonly klass: AttributionClass, readonly reason: string, readonly argUrn?: string) { super(chain); }
+  constructor(readonly chain: string, readonly code: string, readonly klass: AttributionClass, readonly reason: string, readonly argUrn?: string, readonly hint?: string) { super(chain); }
   override attributionClass(): AttributionClass { return this.klass; }
   override failureCode(): string { return this.code; }
   override failureArgUrn(): string | undefined { return this.argUrn; }
+  override failureHint(): string | undefined { return this.hint; }
   override failureReason(): string { return this.reason; }
 }
 export class OtherError extends OpError { constructor(readonly wrapped: unknown) { super(errorMessage(wrapped)); } }
