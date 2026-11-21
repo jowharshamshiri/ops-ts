@@ -1,16 +1,16 @@
-import { OpMetadata } from "./metadata.js";
+import { type JsonSchema, OpMetadata } from "./metadata.js";
 import type { Op } from "./op.js";
 
-function required(schema?: object): string[] {
-  const value=(schema as {required?:unknown[]}|undefined)?.required;
+function required(schema?: JsonSchema): string[] {
+  const value=schema?.required;
   return Array.isArray(value) ? value.filter((item): item is string=>typeof item === "string") : [];
 }
-function properties(schema?: object): Record<string,unknown> {
-  const value=(schema as {properties?:unknown}|undefined)?.properties;
+function properties(schema?: JsonSchema): Record<string,unknown> {
+  const value=schema?.properties;
   return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string,unknown> : {};
 }
-function outputs(schema?: object): Set<string> {
-  return (schema as {type?:unknown}|undefined)?.type === "string" ? new Set(["result"]) : new Set(Object.keys(properties(schema)));
+function outputs(schema?: JsonSchema): Set<string> {
+  return schema?.type === "string" ? new Set(["result"]) : new Set(Object.keys(properties(schema)));
 }
 
 /** Builds batch metadata from either operations or already-materialized metadata. */

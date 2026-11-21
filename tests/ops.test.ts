@@ -41,9 +41,16 @@ test("batch metadata builder accepts operations and analyzes producer-consumer d
 
 test("batch aborts before the next operation and rolls back prior work",async()=>{
   const state:string[]=[]; const dry=new DryContext();
-  const aborting:Op<number>={perform:async()=>{dry.setAbort("stop");return 1;},metadata:()=>OpMetadata.builder("abort").build(),rollback:async()=>state.push("rollback:abort")};
+  const aborting:Op<number>={perform:async()=>{dry.setAbort("stop");return 1;},metadata:()=>OpMetadata.builder("abort").build(),rollback:async()=>{state.push("rollback:abort");}};
   const batch=new BatchOp<number>([aborting,new ValueOp(2,"never",undefined,state)]);
   await assert.rejects(()=>batch.perform(dry,new WetContext()),AbortedError); assert.deepEqual(state,["rollback:abort"]);
+});
+
+test("a completed batch's and loop's own rollback takes the op contexts and leaves their children's work alone",async()=>{
+  const state:string[]=[]; const dry=new DryContext(), wet=new WetContext();
+  const batch=new BatchOp<number>([new ValueOp(1,"first",undefined,state)]); await batch.perform(dry,wet); await batch.rollback(dry,wet);
+  const loop=new LoopOp<number>("counter",1,[new ValueOp(2,"second",undefined,state)]); await loop.perform(dry,wet); await loop.rollback(dry,wet);
+  assert.deepEqual(state,["perform:1","perform:2"]);
 });
 
 test("dry and wet ensure factories execute exactly once and cache their results",async()=>{

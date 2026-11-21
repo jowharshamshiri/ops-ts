@@ -4,4 +4,4 @@ TypeScript implementation of the ops framework. It provides serializable dry con
 
 Install from npm with `npm install @jowharshamshiri/ops-ts`.
 
-Build with `npm run build`; run the behavior tests with `npm test`.
+Build with `npm run build`; run the behavior tests with `npm test`; typecheck the source and the tests with `npm run typecheck`.
