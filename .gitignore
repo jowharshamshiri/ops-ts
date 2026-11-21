@@ -6,3 +6,8 @@ coverage/
 .env
 .env.*
 !.env.example
+.wsb/wsb.db
+.wsb/state.json
+.wsb/sessions.db*
+.wsb/logs/
+.wsb/workbench.json
